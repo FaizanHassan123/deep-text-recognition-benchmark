@@ -22,6 +22,18 @@ class Post_Model(torch.nn.Module):
         output = output.permute(1, 0, 2)
         return output
 
+from collections import OrderedDict
+def copyStateDict(state_dict):
+    if list(state_dict.keys())[0].startswith("module"):
+        start_idx = 1
+    else:
+        start_idx = 0
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = ".".join(k.split(".")[start_idx:])
+        new_state_dict[name] = v
+    return new_state_dict
+
 def transform_to_onnx(opt):
     """ model configuration """
     if 'CTC' in opt.Prediction:
@@ -39,7 +51,7 @@ def transform_to_onnx(opt):
 
     # load model
     print('loading pretrained model from %s' % opt.saved_model)
-    model.load_state_dict(torch.load(opt.saved_model, map_location=device))
+    copyStateDict(torch.load(opt.saved_model, map_location=device))
     
     # change output, so that OpenCV sample can run it correctly
     pose_model = Post_Model(model)
